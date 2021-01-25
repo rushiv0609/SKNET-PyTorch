@@ -8,7 +8,7 @@ from train_test import train,test
 Downloading & importing dataset
 '''
 utils.download_data()
-train_loader, val_loader, test_loader = utils.get_dataloaders(512)
+train_loader, val_loader, test_loader = utils.get_dataloaders(batch_size = 256)
 
 '''
 Define SKNet Model
