@@ -26,5 +26,5 @@ net.to(device)
 Start Training
 '''
 
-net = train(net, device, train_loader, val_loader, EPOCHS = 1)
+net = train(net, device, train_loader, val_loader)
 test(net, device, test_loader)

@@ -34,9 +34,10 @@ def get_dataloaders(batch_size = 256):
     test_len = len(test_ds)
     val_len = tot_len //10
     train_len = tot_len - val_len
-    print("Length of train, valid, test set : ",(train_len, val_len, test_len))
     
-    train_ds, val_ds,test_ds,_= torch.utils.data.random_split(training, [1000, 1000, 500, tot_len-2500])
+    
+    train_ds, val_ds= torch.utils.data.random_split(training, [train_len, val_len])
+    print("Length of train, valid, test set : ",(len(train_ds), len(val_ds), len(test_ds)))
     train_loader = DataLoader(train_ds, shuffle=True, batch_size= batch_size)
     val_loader = DataLoader(val_ds, shuffle=True, batch_size= batch_size)
     test_loader = DataLoader(test_ds, shuffle=True, batch_size= batch_size)
