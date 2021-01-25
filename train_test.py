@@ -20,6 +20,7 @@ def train(net, device, train_loader, val_loader, EPOCHS = 30, lr = 0.001):
     val_loss_arr = []
     best_loss = 1.0
     # EPOCHS = 30
+    print("Number of batches = ",num_batches)
     print("Training Started at ", time.strftime("%H:%M:%S", time.localtime()))
     start = time.time()
     for epoch in range(0,EPOCHS):  # loop over the dataset multiple times
