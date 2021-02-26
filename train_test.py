@@ -53,10 +53,10 @@ def train(net, device, train_loader, val_loader, EPOCHS = 30, lr = 0.001):
                 running_loss = 0.0
         
         train_loss = epoch_loss/num_batches
-        val_acc, val_loss = val(net, device, val_loader, criterion)
+        val_acc,val_top5, val_loss = val(net, device, val_loader, criterion)
         train_loss_arr.append(train_loss)
         val_loss_arr.append(val_loss)
-        print("Epoch %s complete => Train_Loss : %.6f, Val_Loss : %.6f, Val_acc : %.2f , time taken : %s"%(epoch+1, train_loss, val_loss, val_acc, time.time() - epoch_start))
+        print("Epoch %s complete => Train_Loss : %.6f, Val_Loss : %.6f, Val_acc : %.2f , Val_top5_acc : %.2f , time taken : %s"%(epoch+1, train_loss, val_loss, val_acc, val_top5, time.time() - epoch_start))
     
         #SAVE Best Model
         if epoch > (EPOCHS/2) and val_loss < best_loss : 
@@ -76,6 +76,7 @@ def val(net, device, test_loader, criterion):
     total = 0
     net.eval()
     loss = 0
+    top5_correct = 0
     with torch.no_grad():
         for data in test_loader:
             images, labels = data[0].to(device), data[1].to(device)
@@ -83,12 +84,14 @@ def val(net, device, test_loader, criterion):
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+            top5_correct += top5(outputs, labels)
             loss += criterion(outputs, labels)
     
     accuracy = 100 * correct / total
+    top5_acc = 100* top5_correct / total
     loss = loss / len(test_loader)
     
-    return accuracy, loss.item()
+    return accuracy, top5_acc, loss.item()
 
 def test(net, device, test_loader):
     correct = 0.0
@@ -105,3 +108,11 @@ def test(net, device, test_loader):
     
     print('Accuracy of the network on the 10000 test images: %s %%' % (
         100 * correct / total))
+    
+def top5(pred, y):
+    k_vals = torch.topk(pred, 5).indices
+    correct = 0
+    for i in range(y.shape[0]):
+        if y[i].item() in pred[i]:
+            correct += 1
+    return correct

@@ -22,24 +22,32 @@ def download_data():
 def get_dataloaders(batch_size = 256):
     transform = transforms.Compose(
         [transforms.RandomCrop((56,56)),
+        transforms.RandomHorizontalFlip(p=0.5),
         transforms.ToTensor(),
         transforms.Normalize((0.4802, 0.4481, 0.3975), (0.2770, 0.2691, 0.2821)),])
     
     train_dir = 'tiny-imagenet-200/train'
     test_dir = 'tiny-imagenet-200/val'
-    training = torchvision.datasets.ImageFolder(train_dir, transform = transform)
-    test_ds = torchvision.datasets.ImageFolder(test_dir, transform = transform)
-    
-    tot_len = len(training)
-    test_len = len(test_ds)
-    val_len = tot_len //10
-    train_len = tot_len - val_len
+    train_ds = torchvision.datasets.ImageFolder(train_dir, transform = transform)
+    val_ds = torchvision.datasets.ImageFolder(test_dir, transform = transform)
+    # train_ds, val_ds, _ = torch.utils.data.random_split(train_ds, [10, 10, len(train_ds)-20])
     
     
-    train_ds, val_ds= torch.utils.data.random_split(training, [train_len, val_len])
-    print("Length of train, valid, test set : ",(len(train_ds), len(val_ds), len(test_ds)))
+    print("Length of train, valid set: ",(len(train_ds), len(val_ds)))
     train_loader = DataLoader(train_ds, shuffle=True, batch_size= batch_size)
     val_loader = DataLoader(val_ds, shuffle=True, batch_size= batch_size)
-    test_loader = DataLoader(test_ds, shuffle=True, batch_size= batch_size)
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader
 
+def get_mean_std(loader):
+
+    ch_sum, ch_sq_sum, num_batch = 0, 0, 0
+
+    for data,_ in loader:
+        ch_sum += torch.mean(data, dim = [0,2,3])
+        ch_sq_sum += torch.mean(data**2, dim = [0,2,3])
+        num_batch += 1
+
+    mean = ch_sum / num_batch
+    std = ((ch_sq_sum/num_batch) - (mean**2))**0.5
+
+    return mean, std
