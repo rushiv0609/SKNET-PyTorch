@@ -59,7 +59,8 @@ def train(net, device, train_loader, val_loader, EPOCHS = 30, lr = 0.001):
         print("Epoch %s complete => Train_Loss : %.6f, Val_Loss : %.6f, Val_acc : %.2f , Val_top5_acc : %.2f , time taken : %s"%(epoch+1, train_loss, val_loss, val_acc, val_top5, time.time() - epoch_start))
     
         #SAVE Best Model
-        if epoch > (EPOCHS/2) and val_loss < best_loss : 
+        if epoch > (EPOCHS/2) and val_loss < best_loss :
+            best_loss = val_loss
             torch.save(net.state_dict(), 'SKNET.pt')
             print("Model saved")
     
@@ -80,7 +81,8 @@ def val(net, device, test_loader, criterion):
     with torch.no_grad():
         for data in test_loader:
             images, labels = data[0].to(device), data[1].to(device)
-            outputs = net(images)   
+            outputs = net(images)
+            outputs = F.softmax(outputs, dim = 1)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -113,6 +115,6 @@ def top5(pred, y):
     k_vals = torch.topk(pred, 5).indices
     correct = 0
     for i in range(y.shape[0]):
-        if y[i].item() in pred[i]:
+        if y[i].item() in k_vals[i]:
             correct += 1
     return correct
