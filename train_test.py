@@ -11,8 +11,22 @@ def change_lr(optimizer, lr):
 
 
 def train(net, device, train_loader, val_loader, EPOCHS = 30, lr = 0.001):
+    '''
+    Parameters
+    ----------
+    net : PyTorch Model
+    device : device type, cpu or cuda
+    train_loader : train data loaders
+    val_loader : validation data loader
+    EPOCHS : # of epochs to run The default is 30.
+    lr : Learning Rate The default is 0.001.
+
+    Returns
+    -------
+    net : Model after training using given parameters
+
+    '''
     criterion = nn.CrossEntropyLoss().cuda()
-    # lr = 0.001
     optimizer = optim.Adam(net.parameters(), lr = lr, weight_decay=1e-4, betas=(0.9, 0.999))
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience = 1, factor = 0.5, verbose = True)
     num_batches = len(train_loader)

@@ -133,7 +133,7 @@ class SKNet(nn.Module):
         '''
         super(SKNet, self).__init__()
         self.basic_conv = nn.Sequential(
-            nn.Conv2d(3, 64, 3,padding = 1, bias=False, stride = 1),
+            nn.Conv2d(3, 64, kernel_size=5, padding = 2, bias=False, stride = 1),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
         )
@@ -172,7 +172,8 @@ class SKNet(nn.Module):
     
     
 if __name__ == '__main__':
-    net = SKNet(1000, [2,2,2,2], [1,2,2,2], G = 1).cuda()
+    net = SKNet(200, [2,2,2,2], [1,2,2,2], G = 1).cuda()
+    # print(summary(net, (3, 64, 64)))
     print(summary(net, (3, 56, 56)))
     # c = SKConv(128)
     # x = torch.zeros(8,128,2,2)

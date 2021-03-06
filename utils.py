@@ -7,6 +7,9 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
 def download_data():
+    '''
+    Downlaod Data if not already downloaded
+    '''
     
     dir_name = 'tiny-imagenet-200'
     zip_file = 'tiny-imagenet-200.zip'
@@ -20,6 +23,9 @@ def download_data():
             zip_ref.extractall(".")
 
 def get_dataloaders(batch_size = 256):
+    '''
+    Get Dataloaders with specified batch_size
+    '''
     transform = transforms.Compose(
         [transforms.RandomCrop((56,56)),
         transforms.RandomHorizontalFlip(p=0.5),
@@ -39,6 +45,12 @@ def get_dataloaders(batch_size = 256):
     return train_loader, val_loader
 
 def get_mean_std(loader):
+    '''
+    calculate mean and std. deviation for a dataset
+    
+    loader : torch DataLoader for dataset
+
+    '''
 
     ch_sum, ch_sq_sum, num_batch = 0, 0, 0
 

@@ -37,5 +37,5 @@ print("Model loaded sucessfully")
 Start Training
 '''
 
-net = train(net, device, train_loader, val_loader, lr = 9.33e-05)
+net = train(net, device, train_loader, val_loader, lr = 5e-04)
 # test(net, device, test_loader)
