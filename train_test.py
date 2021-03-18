@@ -34,8 +34,8 @@ def train(net, device, train_loader, val_loader, lr_scheduler, EPOCHS = 30, lr =
 
     if lr_scheduler == "cyclic" :
         scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer,
-                                                      base_lr = 8e-5,
-                                                      max_lr = 8e-4,
+                                                      base_lr = 4e-5,
+                                                      max_lr = 4e-4,
                                                       step_size_up = num_batches,
                                                       step_size_down = num_batches,
                                                       cycle_momentum = False)
@@ -49,7 +49,7 @@ def train(net, device, train_loader, val_loader, lr_scheduler, EPOCHS = 30, lr =
     val_loss_arr = []
     best_loss = 10.0
     # EPOCHS = 30
-    print("Number of batches = %s, lr = %s"%(num_batches, lr))
+    print("Number of batches = %s, lr = %s"%(num_batches, get_lr(optimizer)))
     print("Training Started at ", time.strftime("%H:%M:%S", time.localtime()))
     start = time.time()
     for epoch in range(0,EPOCHS):  # loop over the dataset multiple times
@@ -91,7 +91,7 @@ def train(net, device, train_loader, val_loader, lr_scheduler, EPOCHS = 30, lr =
         if lr_scheduler != "cyclic" :
             scheduler.step(val_loss)
         print("Epoch %s complete => Train_Loss : %.6f, Val_Loss : %.6f, Val_acc : %.2f , Val_top5_acc : %.2f , time taken : %s"%(epoch+1, train_loss, val_loss, val_acc, val_top5, time.time() - epoch_start))
-        # print("lr = %s"%(get_lr(optimizer)))
+        print("lr = %s"%(get_lr(optimizer)))
         #SAVE Best Model
         if epoch > (EPOCHS/3) and val_loss < best_loss :
             best_loss = val_loss

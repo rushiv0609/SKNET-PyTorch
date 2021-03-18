@@ -137,9 +137,7 @@ class SKNet(nn.Module):
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
         )
-        
-        self.maxpool = nn.MaxPool2d(3, padding = 1, stride = 2)
-        
+                
         self.stage_1 = self._make_layer(64, 64, 64, nums_block=nums_block_list[0], stride=strides_list[0], G = G)
         self.stage_2 = self._make_layer(64, 128, 128, nums_block=nums_block_list[1], stride=strides_list[1], G = G)
         self.stage_3 = self._make_layer(128, 256, 256, nums_block=nums_block_list[2], stride=strides_list[2], G = G)
@@ -149,6 +147,14 @@ class SKNet(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(512, class_num))#,
             # nn.Softmax(dim = 1))
+            
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
         
     def _make_layer(self, in_feats, mid_feats, out_feats, nums_block, stride=1, G = 32):
         layers=[SKUnit(in_feats, mid_feats, out_feats, stride=stride, G = G)]
@@ -158,7 +164,6 @@ class SKNet(nn.Module):
 
     def forward(self, x):
         fea = self.basic_conv(x)
-        #fea = self.maxpool(fea)
         fea = self.stage_1(fea)
         fea = self.stage_2(fea)
         fea = self.stage_3(fea)
