@@ -10,7 +10,7 @@ def change_lr(optimizer, lr):
         g['lr'] = lr
 
 
-def train(net, device, train_loader, val_loader, EPOCHS = 30, lr = 0.001):
+def train(net, device, train_loader, val_loader, lr_scheduler, EPOCHS = 30, lr = 0.001):
     '''
     Parameters
     ----------
@@ -28,11 +28,26 @@ def train(net, device, train_loader, val_loader, EPOCHS = 30, lr = 0.001):
     '''
     criterion = nn.CrossEntropyLoss().cuda()
     optimizer = optim.Adam(net.parameters(), lr = lr, weight_decay=1e-4, betas=(0.9, 0.999))
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', patience = 1, factor = 0.5, verbose = True)
     num_batches = len(train_loader)
+    scheduler = None
+    print("LR Scheduler : ", lr_scheduler)
+
+    if lr_scheduler == "cyclic" :
+        scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer,
+                                                      base_lr = 8e-5,
+                                                      max_lr = 8e-4,
+                                                      step_size_up = num_batches,
+                                                      step_size_down = num_batches,
+                                                      cycle_momentum = False)
+    else :
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',
+                                                               patience = 1, 
+                                                               factor = 0.5, 
+                                                               verbose = True)
+    
     train_loss_arr = []
     val_loss_arr = []
-    best_loss = 1.0
+    best_loss = 10.0
     # EPOCHS = 30
     print("Number of batches = %s, lr = %s"%(num_batches, lr))
     print("Training Started at ", time.strftime("%H:%M:%S", time.localtime()))
@@ -57,6 +72,8 @@ def train(net, device, train_loader, val_loader, EPOCHS = 30, lr = 0.001):
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
+            if lr_scheduler == "cyclic" :
+                scheduler.step()
     
             # print statistics
             running_loss += loss.item()
@@ -70,10 +87,13 @@ def train(net, device, train_loader, val_loader, EPOCHS = 30, lr = 0.001):
         val_acc,val_top5, val_loss = val(net, device, val_loader, criterion)
         train_loss_arr.append(train_loss)
         val_loss_arr.append(val_loss)
+        
+        if lr_scheduler != "cyclic" :
+            scheduler.step(val_loss)
         print("Epoch %s complete => Train_Loss : %.6f, Val_Loss : %.6f, Val_acc : %.2f , Val_top5_acc : %.2f , time taken : %s"%(epoch+1, train_loss, val_loss, val_acc, val_top5, time.time() - epoch_start))
-    
+        # print("lr = %s"%(get_lr(optimizer)))
         #SAVE Best Model
-        if epoch > (EPOCHS/2) and val_loss < best_loss :
+        if epoch > (EPOCHS/3) and val_loss < best_loss :
             best_loss = val_loss
             torch.save(net.state_dict(), 'SKNET.pt')
             print("Model saved")
@@ -83,6 +103,7 @@ def train(net, device, train_loader, val_loader, EPOCHS = 30, lr = 0.001):
     plt.plot(range(1, len(train_loss_arr)+1), train_loss_arr)
     plt.plot(range(1, len(val_loss_arr)+1), val_loss_arr)
     plt.legend(["train","val"])
+    plt.savefig('train_graph.png')
     
     return net
 
@@ -132,3 +153,7 @@ def top5(pred, y):
         if y[i].item() in k_vals[i]:
             correct += 1
     return correct
+
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group['lr']

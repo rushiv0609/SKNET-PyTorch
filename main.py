@@ -10,6 +10,11 @@ Define parser to get groups as cmd input
 '''
 parser = argparse.ArgumentParser()
 parser.add_argument("-G", default = 1, help="number of conv groups in model")
+parser.add_argument("-batchsize", default = 256, help="batch size")
+parser.add_argument("-lr_schedule", 
+                    default = "plateau", 
+                    help="lr scheduler => write `cyclic` if want to use CLR ")
+parser.add_argument("-epochs", default = 30, help="epochs")
 args = parser.parse_args()
 
 '''
@@ -17,7 +22,7 @@ Downloading & importing dataset
 '''
 print('Process Started at %s'%(str(datetime.now())))
 utils.download_data()
-train_loader, val_loader = utils.get_dataloaders(batch_size = 256)
+train_loader, val_loader = utils.get_dataloaders(batch_size = args.batchsize)
 print('Data downloaded and loaded sucessfully')
 
 '''
@@ -37,5 +42,5 @@ print("Model loaded sucessfully")
 Start Training
 '''
 
-net = train(net, device, train_loader, val_loader, lr = 5e-04)
+net = train(net, device, train_loader, val_loader, lr = 5e-04, lr_scheduler = args.lr_schedule)
 # test(net, device, test_loader)

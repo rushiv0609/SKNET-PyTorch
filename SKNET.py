@@ -133,7 +133,7 @@ class SKNet(nn.Module):
         '''
         super(SKNet, self).__init__()
         self.basic_conv = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=5, padding = 2, bias=False, stride = 1),
+            nn.Conv2d(3, 64, kernel_size=3, padding = 1, bias=False, stride = 1),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
         )
