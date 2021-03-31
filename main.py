@@ -35,7 +35,7 @@ torch.cuda.empty_cache()
 print(device)
 
 num_classes = 200
-if args.model == 2:
+if int(args.model) == 2:
     print("ResNet")
     net = resnet18(200)
 else:
