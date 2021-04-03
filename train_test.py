@@ -10,7 +10,7 @@ def change_lr(optimizer, lr):
         g['lr'] = lr
 
 
-def train(net, device, train_loader, val_loader, lr_scheduler, EPOCHS = 30, lr = 0.001):
+def train(net, device, train_loader, val_loader, lr_scheduler, epochs = 30, lr = 0.001):
     '''
     Parameters
     ----------
@@ -18,7 +18,7 @@ def train(net, device, train_loader, val_loader, lr_scheduler, EPOCHS = 30, lr =
     device : device type, cpu or cuda
     train_loader : train data loaders
     val_loader : validation data loader
-    EPOCHS : # of epochs to run The default is 30.
+    epochs : # of epochs to run The default is 30.
     lr : Learning Rate The default is 0.001.
 
     Returns
@@ -41,18 +41,18 @@ def train(net, device, train_loader, val_loader, lr_scheduler, EPOCHS = 30, lr =
                                                       cycle_momentum = False)
     else :
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',
-                                                               patience = 1, 
+                                                               patience = 2, 
                                                                factor = 0.5, 
                                                                verbose = True)
     
     train_loss_arr = []
     val_loss_arr = []
     best_loss = 10.0
-    # EPOCHS = 30
+    # epochs = 30
     print("Number of batches = %s, lr = %s"%(num_batches, get_lr(optimizer)))
     print("Training Started at ", time.strftime("%H:%M:%S", time.localtime()))
     start = time.time()
-    for epoch in range(0,EPOCHS):  # loop over the dataset multiple times
+    for epoch in range(0,epochs):  # loop over the dataset multiple times
         epoch_start = time.time()
         running_loss = 0.0
         epoch_loss = 0.0
@@ -93,7 +93,7 @@ def train(net, device, train_loader, val_loader, lr_scheduler, EPOCHS = 30, lr =
         print("Epoch %s complete => Train_Loss : %.6f, Val_Loss : %.6f, Val_acc : %.2f , Val_top5_acc : %.2f , time taken : %s"%(epoch+1, train_loss, val_loss, val_acc, val_top5, time.time() - epoch_start))
         print("lr = %s"%(get_lr(optimizer)))
         #SAVE Best Model
-        if epoch > (EPOCHS/3) and val_loss < best_loss :
+        if epoch > (epochs/3) and val_loss < best_loss :
             best_loss = val_loss
             torch.save(net.state_dict(), 'SKNET.pt')
             print("Model saved")
