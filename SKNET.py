@@ -71,10 +71,80 @@ class SKConv(nn.Module):
         feats_V = feats_3x3.add_(feats_5x5)
         
         return feats_V
+    
+class SKConv1x1(nn.Module):
+    def __init__(self, features, M=2, G=32, r=16, stride=1 ,L=32):
+        """ Constructor
+        Args:
+            features: input channel dimensionality.
+            M: the number of branchs.
+            G: num of convolution groups.
+            r: the radio for compute d, the length of z.
+            stride: stride, default 1.
+            L: the minimum dim of the vector z in paper, default 32.
+        """
+        super(SKConv1x1, self).__init__()
+        d = max(int(features/r), L)
+        self.M = M
+        self.features = features
+        self.convs = nn.ModuleList([])
+        for i in range(M):
+            self.convs.append(nn.Sequential(
+                nn.Conv2d(features, features, kernel_size=(1 + 2*i) , stride=stride, padding=i, groups=G, bias=False),
+                nn.BatchNorm2d(features),
+                nn.ReLU(inplace=False)
+            ))
+        self.gap = nn.AdaptiveAvgPool2d((1,1))
+        self.fc = nn.Sequential(#nn.Conv2d(features, d, kernel_size=1, stride=1, bias=False),
+                                #nn.Linear(features, d),
+                                nn.Conv1d(features, d, kernel_size=1, stride=1),
+                                nn.BatchNorm1d(d),
+                                nn.ReLU(inplace=False),
+                                nn.Conv1d(d, 2 * features, kernel_size=1, stride=1))
+        # self.fcs = nn.ModuleList([])
+        # for i in range(M):
+        #     self.fcs.append(
+        #           nn.Conv1d(d, features, kernel_size=1, stride=1)
+        #           #nn.Linear(d, features)
+        #     )
+        
+        self.softmax = nn.Softmax(dim=1)
+        
+    def forward(self, x):
+        
+        batch_size,in_ch,W,H = x.shape
+        # Split
+        feats_1x1 = self.convs[0](x)
+        feats_3x3 = self.convs[1](x)
+        # feats = [conv(x) for conv in self.convs]
+        # feats = torch.cat(feats, dim=1)
+        # feats = feats.view(batch_size, self.M, self.features, feats.shape[2], feats.shape[3])
+        
+        # Fuse
+        feats_U = feats_3x3.add(feats_1x1)
+        feats_S = self.gap(feats_U).view([batch_size, self.features])
+        #print(feats_S.shape)
+        feats_Z = self.fc(feats_S.unsqueeze(2))
+        
+        # Select
+        # attention_vectors = [fc(feats_Z) for fc in self.fcs]
+        # attention_vectors = torch.cat(attention_vectors, dim=1)
+        attention_vectors = feats_Z
+        attention_vectors = attention_vectors.view(batch_size, self.M, self.features, 1, 1)
+        # print(attention_vectors.shape)
+        attention_vectors = self.softmax(attention_vectors)
+        att_1x1 = attention_vectors[:,0]
+        att_3x3 = attention_vectors[:,1]
+        # feats_V = torch.sum(feats*attention_vectors, dim=1)
+        feats_1x1 = feats_1x1.mul(att_1x1)
+        feats_3x3 = feats_3x3.mul(att_3x3)
+        feats_V = feats_1x1.add_(feats_3x3)
+        
+        return feats_V
 
 
 class SKUnit(nn.Module):
-    def __init__(self, in_features, mid_features, out_features, M=2, G=32, r=16, stride=1, L=32):
+    def __init__(self, in_features, mid_features, out_features, M=2, G=32, r=16, stride=1, L=32, use_1x1=False):
         """ Constructor
         Args:
             in_features: input channel dimensionality.
@@ -94,7 +164,11 @@ class SKUnit(nn.Module):
             nn.ReLU(inplace=True)
             )
         
-        self.conv2_sk = SKConv(mid_features, M=M, G=G, r=r, stride=stride, L=L)
+        if use_1x1 :
+            self.conv2_sk = SKConv1x1(mid_features, M=M, G=G, r=r, stride=stride, L=L)
+            
+        else:
+            self.conv2_sk = SKConv(mid_features, M=M, G=G, r=r, stride=stride, L=L)
         
         self.conv3 = nn.Sequential(
             nn.Conv2d(mid_features, out_features, 1, stride=1, bias=False),
@@ -122,7 +196,7 @@ class SKUnit(nn.Module):
         return self.relu(out + self.shortcut(residual))
 
 class SKNet(nn.Module):
-    def __init__(self, class_num, nums_block_list = [3, 4, 6,3], strides_list = [1, 2, 2, 2], G = 32):
+    def __init__(self, class_num, nums_block_list = [3, 4, 6,3], strides_list = [1, 2, 2, 2], G = 32, use_1x1 = False):
         '''
         Parameters
         ----------
@@ -132,6 +206,7 @@ class SKNet(nn.Module):
 
         '''
         super(SKNet, self).__init__()
+        self.use_1x1 = use_1x1
         self.basic_conv = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, padding = 1, bias=False, stride = 1),
             nn.BatchNorm2d(64),
@@ -159,7 +234,7 @@ class SKNet(nn.Module):
     def _make_layer(self, in_feats, mid_feats, out_feats, nums_block, stride=1, G = 32):
         layers=[SKUnit(in_feats, mid_feats, out_feats, stride=stride, G = G)]
         for _ in range(1,nums_block):
-            layers.append(SKUnit(out_feats, mid_feats, out_feats, G = G))
+            layers.append(SKUnit(out_feats, mid_feats, out_feats, G = G, use_1x1=self.use_1x1))
         return nn.Sequential(*layers)
 
     def forward(self, x):
@@ -177,9 +252,10 @@ class SKNet(nn.Module):
     
     
 if __name__ == '__main__':
-    net = SKNet(200, [2,2,2,2], [1,2,2,2], G = 1).cuda()
+    net = SKNet(200, [2,2,2,2], [1,2,2,2], G = 1, use_1x1=True).cuda()
     # print(summary(net, (3, 64, 64)))
     print(summary(net, (3, 56, 56)))
+    torch.cuda.empty_cache()
     # c = SKConv(128)
     # x = torch.zeros(8,128,2,2)
     # print(c(x).shape)   

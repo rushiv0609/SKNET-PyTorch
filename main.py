@@ -2,9 +2,14 @@ import torch
 from SKNET import SKNet
 from Resnet import resnet18, resnet34
 import utils
-from train_test import train,test
+from train_test import train
 import argparse
 from datetime import datetime 
+
+'''
+cmd :
+nohup python -u SKNET-PyTorch/main.py -epochs 50 -model 2 -skconv -lr_schedule cyclic &
+'''
 
 '''
 Define parser to get groups as cmd input
@@ -18,6 +23,7 @@ parser.add_argument("-lr_schedule",
 parser.add_argument("-epochs", default = 30, type=int, help="epochs")
 parser.add_argument("-model", default = 2, type=int, help="1 -> SKNET, 2-> ResNet18, 3-> ResNet34")
 parser.add_argument("-skconv", action="store_true")
+parser.add_argument("-use1x1", action="store_true")
 args = parser.parse_args()
 
 
@@ -38,13 +44,14 @@ print(device)
 
 num_classes = 200
 if int(args.model) == 2:
-    print("ResNet18, skconv = ", args.skconv)
-    net = resnet18(200, args.skconv)
+    print("ResNet18, skconv = %s, use1x1 = %s"%(args.skconv, args.use1x1))
+    net = resnet18(200, args.skconv, args.use1x1)
 elif int(args.model) == 3:
-    print("ResNet34, skconv = ", args.skconv)
-    net = resnet34(200, args.skconv)
+    print("ResNet34, skconv = %s, use1x1 = %s"%(args.skconv, args.use1x1))
+    net = resnet34(200, args.skconv, args.use1x1)
 else:
-    net = SKNet(200, [2,2,2,2], [1,2,2,2], G = args.G)
+    print("SKNET, use1x1 = %s"%(args.use1x1))
+    net = SKNet(200, [2,2,2,2], [1,2,2,2], G = args.G , use_1x1 = args.use1x1)
 net.to(device)
 print("# of Parameters : ",sum([p.numel() for p in net.parameters()]))
 print("Model loaded sucessfully")

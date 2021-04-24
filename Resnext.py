@@ -156,6 +156,7 @@ if __name__ == '__main__':
     net = ResNeXt(200, [2,2,2,2], 32, 4).cuda()
     # print(summary(net, (3, 64, 64)))
     print(summary(net, (3, 56, 56)))
+    torch.cuda.empty_cache()
     # c = SKConv(128)
     # x = torch.zeros(8,128,2,2)
     # print(c(x).shape)   

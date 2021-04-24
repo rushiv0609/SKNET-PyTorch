@@ -34,10 +34,12 @@ def train(net, device, train_loader, val_loader, lr_scheduler, epochs = 30, lr =
 
     if lr_scheduler == "cyclic" :
         scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer,
-                                                      base_lr = 4e-5,
+                                                      base_lr = 1e-5,
                                                       max_lr = 4e-4,
-                                                      step_size_up = num_batches,
-                                                      step_size_down = num_batches,
+                                                      step_size_up = 2*num_batches,
+                                                      step_size_down = 2*num_batches,
+                                                      mode = 'exp_range',
+                                                      gamma = 0.95,
                                                       cycle_momentum = False)
     else :
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',
@@ -49,7 +51,8 @@ def train(net, device, train_loader, val_loader, lr_scheduler, epochs = 30, lr =
     val_loss_arr = []
     best_loss = 10.0
     # epochs = 30
-    print("Number of batches = %s, lr = %s"%(num_batches, get_lr(optimizer)))
+    print("Number of batches = %s, lr = %s, epochs = %s"
+          %(num_batches, get_lr(optimizer), epochs))
     print("Training Started at ", time.strftime("%H:%M:%S", time.localtime()))
     start = time.time()
     for epoch in range(0,epochs):  # loop over the dataset multiple times

@@ -19,8 +19,10 @@ def download_data():
             url = 'https://drive.google.com/uc?id=1n-jwJulLoPraTe7KImctFjhsvufi_6yq'
             gdown.download(url, output=zip_file, quiet=False)
         
+        print("Extracting ...")
         with zipfile.ZipFile(zip_file, 'r') as zip_ref:
             zip_ref.extractall(".")
+        print("Extracting complete")
 
 def get_dataloaders(batch_size = 256):
     '''
