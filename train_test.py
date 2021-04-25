@@ -36,8 +36,8 @@ def train(net, device, train_loader, val_loader, cyclic = False, epochs = 30, lr
         scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer,
                                                       base_lr = 1e-5,
                                                       max_lr = 4e-4,
-                                                      step_size_up = 2*num_batches,
-                                                      step_size_down = 2*num_batches,
+                                                      step_size_up = num_batches,
+                                                      step_size_down = num_batches,
                                                       mode = 'exp_range',
                                                       gamma = 0.95,
                                                       cycle_momentum = False)
