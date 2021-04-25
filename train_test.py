@@ -37,6 +37,8 @@ def train(net, device, train_loader, val_loader, cyclic = False, epochs = 30, lr
                                                       base_lr = 1e-5,
                                                       max_lr = 4e-4,
                                                       step_size_up = 2*num_batches,
+                                                      scale_fn = lambda x: 0.8**(x),
+                                                      scale_mode = "cycle",
                                                       cycle_momentum = False)
     else :
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',
