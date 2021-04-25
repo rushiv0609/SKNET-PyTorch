@@ -74,7 +74,6 @@ def train(net, device, train_loader, val_loader, cyclic = False, epochs = 30, lr
             optimizer.step()
             if cyclic :
                 scheduler.step()
-                print("new_lr = ", get_lr(optimizer))
     
             # print statistics
             running_loss += loss.item()
@@ -90,8 +89,8 @@ def train(net, device, train_loader, val_loader, cyclic = False, epochs = 30, lr
         val_loss_arr.append(val_loss)
         
         if not(cyclic) :
-            print("plateau step")
             scheduler.step(val_loss)
+            
         print("Epoch %s complete => Train_Loss : %.6f, Val_Loss : %.6f, Val_acc : %.2f , Val_top5_acc : %.2f , time taken : %s"%(epoch+1, train_loss, val_loss, val_acc, val_top5, time.time() - epoch_start))
         print("lr = %s"%(get_lr(optimizer)))
         #SAVE Best Model
