@@ -10,7 +10,7 @@ def change_lr(optimizer, lr):
         g['lr'] = lr
 
 
-def train(net, device, train_loader, val_loader, lr_scheduler, epochs = 30, lr = 0.001):
+def train(net, device, train_loader, val_loader, cyclic = False, epochs = 30, lr = 0.001):
     '''
     Parameters
     ----------
@@ -30,9 +30,9 @@ def train(net, device, train_loader, val_loader, lr_scheduler, epochs = 30, lr =
     optimizer = optim.Adam(net.parameters(), lr = lr, weight_decay=1e-4, betas=(0.9, 0.999))
     num_batches = len(train_loader)
     scheduler = None
-    print("LR Scheduler : ", lr_scheduler)
+    print("Cyclic : ", cyclic)
 
-    if lr_scheduler == "cyclic" :
+    if cyclic :
         scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer,
                                                       base_lr = 1e-5,
                                                       max_lr = 4e-4,
@@ -75,7 +75,7 @@ def train(net, device, train_loader, val_loader, lr_scheduler, epochs = 30, lr =
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-            if lr_scheduler == "cyclic" :
+            if cyclic :
                 scheduler.step()
     
             # print statistics
@@ -91,7 +91,7 @@ def train(net, device, train_loader, val_loader, lr_scheduler, epochs = 30, lr =
         train_loss_arr.append(train_loss)
         val_loss_arr.append(val_loss)
         
-        if lr_scheduler != "cyclic" :
+        if not(cyclic) :
             scheduler.step(val_loss)
         print("Epoch %s complete => Train_Loss : %.6f, Val_Loss : %.6f, Val_acc : %.2f , Val_top5_acc : %.2f , time taken : %s"%(epoch+1, train_loss, val_loss, val_acc, val_top5, time.time() - epoch_start))
         print("lr = %s"%(get_lr(optimizer)))

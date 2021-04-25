@@ -8,7 +8,7 @@ from datetime import datetime
 
 '''
 cmd :
-nohup python -u SKNET-PyTorch/main.py -epochs 50 -model 2 -skconv -lr_schedule cyclic &
+nohup python -u SKNET-PyTorch/main.py -epochs 50 -model 2 -skconv -cyclic &
 '''
 
 '''
@@ -17,13 +17,11 @@ Define parser to get groups as cmd input
 parser = argparse.ArgumentParser()
 parser.add_argument("-G", default = 1, type=int, help="number of conv groups in model")
 parser.add_argument("-batchsize", default = 256, type=int, help="batch size")
-parser.add_argument("-lr_schedule", 
-                    default = "plateu", 
-                    help="lr scheduler => write `cyclic` if want to use CLR ")
 parser.add_argument("-epochs", default = 30, type=int, help="epochs")
 parser.add_argument("-model", default = 2, type=int, help="1 -> SKNET, 2-> ResNet18, 3-> ResNet34")
 parser.add_argument("-skconv", action="store_true")
 parser.add_argument("-use1x1", action="store_true")
+parser.add_argument("-cyclic", action="store_true")
 args = parser.parse_args()
 
 
@@ -65,6 +63,6 @@ net = train(net,
             train_loader, 
             val_loader, 
             lr = 9.32e-05, 
-            lr_scheduler = args.lr_schedule, 
+            cyclic = args.cyclic, 
             epochs = int(args.epochs))
 # test(net, device, test_loader)
