@@ -34,11 +34,11 @@ def train(net, device, train_loader, val_loader, cyclic = False, epochs = 30, lr
 
     if cyclic :
         scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer,
-                                                      base_lr = 1e-5,
-                                                      max_lr = 4e-4,
-                                                      step_size_up = 2*num_batches,
-                                                      scale_fn = lambda x: 0.8**(x),
-                                                      scale_mode = "cycle",
+                                                      base_lr = 6e-5,
+                                                      max_lr = 6e-4,
+                                                      step_size_up = num_batches,
+                                                      scale_fn = lambda x: 0.9994**(x),
+                                                      scale_mode = "iteration",
                                                       cycle_momentum = False)
     else :
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',

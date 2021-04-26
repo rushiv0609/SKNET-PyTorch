@@ -135,7 +135,6 @@ class ResNeXt(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        # See note [TorchScript super()]
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -153,7 +152,7 @@ class ResNeXt(nn.Module):
         return x
 
 if __name__ == '__main__':
-    net = ResNeXt(200, [2,2,2,2], 32, 4).cuda()
+    net = ResNeXt(200, [2,2,2,2]).cuda()
     # print(summary(net, (3, 64, 64)))
     print(summary(net, (3, 56, 56)))
     torch.cuda.empty_cache()

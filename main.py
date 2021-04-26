@@ -22,6 +22,7 @@ parser.add_argument("-model", default = 2, type=int, help="1 -> SKNET, 2-> ResNe
 parser.add_argument("-skconv", action="store_true")
 parser.add_argument("-use1x1", action="store_true")
 parser.add_argument("-cyclic", action="store_true")
+parser.add_argument("-M", default = 2, type=int, help="epochs")
 args = parser.parse_args()
 
 
@@ -49,7 +50,7 @@ elif int(args.model) == 3:
     net = resnet34(200, args.skconv, args.use1x1)
 else:
     print("SKNET, use1x1 = %s"%(args.use1x1))
-    net = SKNet(200, [2,2,2,2], [1,2,2,2], G = args.G , use_1x1 = args.use1x1)
+    net = SKNet(200, [2,2,2,2], [1,2,2,2], G = args.G , use_1x1 = args.use1x1, M = args.M)
 net.to(device)
 print("# of Parameters : ",sum([p.numel() for p in net.parameters()]))
 print("Model loaded sucessfully")

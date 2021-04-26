@@ -2,6 +2,73 @@ import torch
 import torch.nn as nn
 from torchsummary import summary
 
+class SKConv2(nn.Module):
+    def __init__(self, features, M=2, G=32, r=16, stride=1, L=32, use_1x1 = False):
+        """ Constructor
+        Args:
+            features: input channel dimensionality.
+            M: the number of branchs.
+            G: num of convolution groups.
+            r: the radio for compute d, the length of z.
+            stride: stride, default 1.
+            L: the minimum dim of the vector z in paper, default 32.
+        """
+        super(SKConv2, self).__init__()
+        d = max(int(features / r), L)
+        self.features = features
+        self.M = M
+        self.convs = nn.ModuleList([])
+        start_index = 0
+        dilation_cnt = 0
+        if use_1x1:
+            start_index += 1
+            self.convs.append(
+                nn.Sequential(
+                    nn.Conv2d(features, features, kernel_size=1, stride=stride, groups=G),
+                    nn.BatchNorm2d(features),
+                    nn.ReLU(inplace=False))
+                )
+            
+        for i in range(start_index, M):
+            dilation_cnt += 1
+            self.convs.append(
+                nn.Sequential(
+                    nn.Conv2d( features, features, kernel_size=3, dilation = i+1, stride=stride, padding = i+1, groups=G),
+                    nn.BatchNorm2d(features),
+                    nn.ReLU(inplace=False))
+            )
+            # print(dilation_cnt)
+        self.gap = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(nn.Conv1d(features, d, kernel_size=1, stride=1),
+                                nn.BatchNorm1d(d))
+        self.fcs = nn.ModuleList([])
+        for i in range(M):
+            self.fcs.append(nn.Conv1d(d, features, kernel_size=1, stride=1))
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, x):
+        batch_size,in_ch,W,H = x.shape
+        for i, conv in enumerate(self.convs):
+            fea = conv(x).unsqueeze_(dim=1)
+            if i == 0:
+                feas = fea
+            else:
+                feas = torch.cat([feas, fea], dim=1)
+        fea_U = torch.sum(feas, dim=1)
+        fea_s = self.gap(fea_U).view([batch_size, self.features, 1])
+        fea_z = self.fc(fea_s)
+        for i, fc in enumerate(self.fcs):
+            vector = fc(fea_z).unsqueeze(1)
+            if i == 0:
+                attention_vectors = vector
+            else:
+                attention_vectors = torch.cat([attention_vectors, vector], dim=1)
+        attention_vectors = self.softmax(attention_vectors).squeeze()
+        attention_vectors = attention_vectors.unsqueeze(-1).unsqueeze(-1)
+        fea_v = (feas * attention_vectors).sum(dim=1)
+        return fea_v
+
+
 class SKConv(nn.Module):
     def __init__(self, features, M=2, G=32, r=16, stride=1 ,L=32):
         """ Constructor
@@ -163,12 +230,12 @@ class SKUnit(nn.Module):
             nn.BatchNorm2d(mid_features),
             nn.ReLU(inplace=True)
             )
-        
-        if use_1x1 :
-            self.conv2_sk = SKConv1x1(mid_features, M=M, G=G, r=r, stride=stride, L=L)
+        # self.conv2_sk =  SKConv1x1(mid_features, M=M, G=G, r=r, stride=stride, L=L)
+        # if use_1x1 :
+        #     self.conv2_sk = SKConv1x1(mid_features, M=M, G=G, r=r, stride=stride, L=L)
             
-        else:
-            self.conv2_sk = SKConv(mid_features, M=M, G=G, r=r, stride=stride, L=L)
+    
+        self.conv2_sk = SKConv2(mid_features, M=M, G=G, r=r, stride=stride, L=L, use_1x1 = use_1x1)
         
         self.conv3 = nn.Sequential(
             nn.Conv2d(mid_features, out_features, 1, stride=1, bias=False),
@@ -196,7 +263,7 @@ class SKUnit(nn.Module):
         return self.relu(out + self.shortcut(residual))
 
 class SKNet(nn.Module):
-    def __init__(self, class_num, nums_block_list = [3, 4, 6,3], strides_list = [1, 2, 2, 2], G = 32, use_1x1 = False):
+    def __init__(self, class_num, nums_block_list = [3, 4, 6,3], strides_list = [1, 2, 2, 2], G = 32, use_1x1 = False, M = 2):
         '''
         Parameters
         ----------
@@ -207,6 +274,7 @@ class SKNet(nn.Module):
         '''
         super(SKNet, self).__init__()
         self.use_1x1 = use_1x1
+        self.M = M
         self.basic_conv = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, padding = 1, bias=False, stride = 1),
             nn.BatchNorm2d(64),
@@ -232,9 +300,14 @@ class SKNet(nn.Module):
 
         
     def _make_layer(self, in_feats, mid_feats, out_feats, nums_block, stride=1, G = 32):
-        layers=[SKUnit(in_feats, mid_feats, out_feats, stride=stride, G = G)]
+        layers=[SKUnit(in_feats, mid_feats, out_feats, stride=stride, M = self.M, G = G, use_1x1 = self.use_1x1)]
         for _ in range(1,nums_block):
-            layers.append(SKUnit(out_feats, mid_feats, out_feats, G = G, use_1x1=self.use_1x1))
+            layers.append(SKUnit(out_feats, 
+                                 mid_feats, 
+                                 out_feats, 
+                                 M = self.M, 
+                                 G = G, 
+                                 use_1x1=self.use_1x1))
         return nn.Sequential(*layers)
 
     def forward(self, x):
@@ -252,10 +325,10 @@ class SKNet(nn.Module):
     
     
 if __name__ == '__main__':
-    net = SKNet(200, [2,2,2,2], [1,2,2,2], G = 1, use_1x1=True).cuda()
+    net = SKNet(200, [2,2,2,2], [1,2,2,2], G = 1, M = 3).cuda()
     # print(summary(net, (3, 64, 64)))
     print(summary(net, (3, 56, 56)))
     torch.cuda.empty_cache()
     # c = SKConv(128)
-    # x = torch.zeros(8,128,2,2)
-    # print(c(x).shape)   
+    # x = torch.zeros(8,3,56,56).cuda()
+    # print(net(x).shape)   
