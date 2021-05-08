@@ -34,8 +34,8 @@ def train(net, device, train_loader, val_loader, cyclic = False, epochs = 30, lr
 
     if cyclic :
         scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer,
-                                                      base_lr = 6e-5,
-                                                      max_lr = 6e-4,
+                                                      base_lr = 4e-5,
+                                                      max_lr = 4e-4,
                                                       step_size_up = num_batches,
                                                       cycle_momentum = False)
     else :
