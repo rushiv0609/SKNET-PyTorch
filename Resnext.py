@@ -138,7 +138,6 @@ class ResNeXt(nn.Module):
         norm_layer = nn.BatchNorm2d
         self.block = block
         self._norm_layer = norm_layer
-
         self.inplanes = 64
         self.dilation = 1
 
@@ -207,17 +206,18 @@ class ResNeXt(nn.Module):
 
         return x
     
-def resnext18(num_classes, skconv = False, use1x1 = False):
+def resnext18(num_classes, skconv = False, use1x1 = False, groups = 1, width_per_group = 64):
     
     if skconv:            
-        return ResNeXt(num_classes, [2, 2, 2, 2], block = SKBlock)
+        return ResNeXt(num_classes, [2, 2, 2, 2], block = SKBlock, groups = groups, width_per_group = width_per_group)
     
-    return ResNeXt(num_classes, [2, 2, 2, 2])
+    return ResNeXt(num_classes, [2, 2, 2, 2], block = Bottleneck, groups = groups, width_per_group = width_per_group)
 
 
 if __name__ == '__main__':
     # net = ResNeXt(200, [2,2,2,2]).cuda()
-    net = resnext18(200, [2,2,2,2], True).cuda()
+    net = resnext18(200, True, groups = 16, width_per_group=8).cuda()
+    # net = resnext18(200).cuda()
     # print(summary(net, (3, 64, 64)))
     print(summary(net, (3, 56, 56)))
     torch.cuda.empty_cache()

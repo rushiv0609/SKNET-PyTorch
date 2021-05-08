@@ -24,6 +24,7 @@ parser.add_argument("-skconv", action="store_true")
 parser.add_argument("-use1x1", action="store_true")
 parser.add_argument("-cyclic", action="store_true")
 parser.add_argument("-M", default = 2, type=int, help="no. of branches in skconv")
+parser.add_argument("-lr", default = 1e-4, type=float, help="lr")
 args = parser.parse_args()
 
 
@@ -54,7 +55,7 @@ elif int(args.model) == 3:
     net = resnet34(200, args.skconv, args.use1x1)
 elif int(args.model) == 4:
     print("ResNeXt18, skconv = %s, use1x1 = %s"%(args.skconv, args.use1x1))
-    net = resnext18(200, args.skconv, args.use1x1)
+    net = resnext18(200, args.skconv, args.use1x1, groups = 16, width_per_group=8)
 else:
     print("Wrong model input, check help")
     parser.print_help()
@@ -71,7 +72,7 @@ net = train(net,
             device, 
             train_loader, 
             val_loader, 
-            lr = 9.32e-05, 
+            lr = float(args.lr), 
             cyclic = args.cyclic, 
             epochs = int(args.epochs))
 # test(net, device, test_loader)
