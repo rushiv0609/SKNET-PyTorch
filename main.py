@@ -1,7 +1,7 @@
 import torch
 from SKNET import SKNet
 from Resnet import resnet18, resnet34
-from Resnext import resnext18
+from Resnext import resnext29
 import utils
 from train_test import train
 import argparse
@@ -10,6 +10,9 @@ from datetime import datetime
 '''
 cmd :
 nohup python -u SKNET-PyTorch/main.py -epochs 50 -model 2 -skconv -cyclic &
+
+scp :
+scp -P 21490 root@ssh5.vast.ai:SKNET.pt .\Desktop\
 '''
 
 '''
@@ -55,7 +58,7 @@ elif int(args.model) == 3:
     net = resnet34(200, args.skconv, args.use1x1)
 elif int(args.model) == 4:
     print("ResNeXt18, skconv = %s, use1x1 = %s"%(args.skconv, args.use1x1))
-    net = resnext18(200, args.skconv, args.use1x1, groups = 16, width_per_group=8)
+    net = resnext29(200, args.skconv, args.use1x1, groups = 32, width_per_group=4)
 else:
     print("Wrong model input, check help")
     parser.print_help()

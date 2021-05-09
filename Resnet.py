@@ -55,6 +55,53 @@ class BasicBlock(nn.Module):
 
         return out
     
+class BasicBlock2(nn.Module):
+    expansion: int = 1
+
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        stride = 1,
+        downsample = None,
+        norm_layer = None):
+        
+        super(BasicBlock2, self).__init__()
+        if norm_layer is None:
+            norm_layer = nn.BatchNorm2d
+            
+        self.conv1 = conv1x1(inplanes, planes, stride)
+        self.bn1 = norm_layer(planes)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = conv3x3(planes, planes)
+        self.bn2 = norm_layer(planes)
+        self.conv3 = conv1x1(planes, planes)
+        self.bn3 = norm_layer(planes)
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        identity = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.relu(out)
+        
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        if self.downsample is not None:
+            identity = self.downsample(x)
+
+        out += identity
+        out = self.relu(out)
+
+        return out
+    
 class SKBlock(nn.Module):
     expansion: int = 1
 
@@ -87,6 +134,53 @@ class SKBlock(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
+
+        if self.downsample is not None:
+            identity = self.downsample(x)
+
+        out += identity
+        out = self.relu(out)
+
+        return out
+    
+class SKBlock2(nn.Module):
+    expansion: int = 1
+
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        stride = 1,
+        downsample = None,
+        norm_layer = None):
+        
+        super(SKBlock2, self).__init__()
+        if norm_layer is None:
+            norm_layer = nn.BatchNorm2d
+            
+        self.conv1 = conv1x1(inplanes, planes, stride)
+        self.bn1 = norm_layer(planes)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = SKConv(planes, G = 1)
+        self.bn2 = norm_layer(planes)
+        self.conv3 = conv1x1(planes, planes)
+        self.bn3 = norm_layer(planes)
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        identity = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.relu(out)
+        
+        out = self.conv3(out)
+        out = self.bn3(out)
 
         if self.downsample is not None:
             identity = self.downsample(x)
@@ -140,7 +234,7 @@ class SKBlock1x1(nn.Module):
     
 class ResNet(nn.Module):
     
-    def __init__(self,num_classes, layers, block = BasicBlock): 
+    def __init__(self,num_classes, layers, block = BasicBlock2): 
         
         super(ResNet, self).__init__()
         
@@ -213,7 +307,7 @@ def resnet18(num_classes, skconv = False, use1x1 = False):
         if use1x1:
             return ResNet(num_classes, [2, 2, 2, 2], SKBlock1x1)
             
-        return ResNet(num_classes, [2, 2, 2, 2], SKBlock)
+        return ResNet(num_classes, [2, 2, 2, 2], SKBlock2)
     
     return ResNet(num_classes, [2, 2, 2, 2])
 
@@ -222,14 +316,14 @@ def resnet34(num_classes, skconv = False, use1x1 = False):
     if skconv:
         if use1x1:
             return ResNet(num_classes, [3, 4, 6, 3], SKBlock1x1)
-        return ResNet(num_classes, [3, 4, 6, 3], SKBlock)
+        return ResNet(num_classes, [3, 4, 6, 3], SKBlock2)
     
     return ResNet(num_classes, [3, 4, 6, 3])
     
     
     
 if __name__ == '__main__':
-    net = resnet34(200, True, True).cuda()
+    net = resnet34(200, True).cuda()
     # print(summary(net, (3, 64, 64)))
     print(summary(net, (3, 56, 56)))
     torch.cuda.empty_cache()
