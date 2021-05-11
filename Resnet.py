@@ -234,7 +234,7 @@ class SKBlock1x1(nn.Module):
     
 class ResNet(nn.Module):
     
-    def __init__(self,num_classes, layers, block = BasicBlock2): 
+    def __init__(self,num_classes, layers, block = BasicBlock): 
         
         super(ResNet, self).__init__()
         
@@ -307,7 +307,7 @@ def resnet18(num_classes, skconv = False, use1x1 = False):
         if use1x1:
             return ResNet(num_classes, [2, 2, 2, 2], SKBlock1x1)
             
-        return ResNet(num_classes, [2, 2, 2, 2], SKBlock2)
+        return ResNet(num_classes, [2, 2, 2, 2], SKBlock)
     
     return ResNet(num_classes, [2, 2, 2, 2])
 
@@ -316,14 +316,14 @@ def resnet34(num_classes, skconv = False, use1x1 = False):
     if skconv:
         if use1x1:
             return ResNet(num_classes, [3, 4, 6, 3], SKBlock1x1)
-        return ResNet(num_classes, [3, 4, 6, 3], SKBlock2)
+        return ResNet(num_classes, [3, 4, 6, 3], SKBlock)
     
     return ResNet(num_classes, [3, 4, 6, 3])
     
     
     
 if __name__ == '__main__':
-    net = resnet34(200, True).cuda()
+    net = resnet18(1000).cuda()
     # print(summary(net, (3, 64, 64)))
     print(summary(net, (3, 56, 56)))
     torch.cuda.empty_cache()
