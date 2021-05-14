@@ -56,8 +56,8 @@ class BasicBlock(nn.Module):
         return out
     
 class BasicBlock2(nn.Module):
-    expansion: int = 1
-
+    expansion: int = 4
+    
     def __init__(
         self,
         inplanes,
@@ -75,8 +75,8 @@ class BasicBlock2(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
         self.bn2 = norm_layer(planes)
-        self.conv3 = conv1x1(planes, planes)
-        self.bn3 = norm_layer(planes)
+        self.conv3 = conv1x1(planes, planes * self.expansion)
+        self.bn3 = norm_layer(planes * self.expansion)
         self.downsample = downsample
         self.stride = stride
 
@@ -144,7 +144,7 @@ class SKBlock(nn.Module):
         return out
     
 class SKBlock2(nn.Module):
-    expansion: int = 1
+    expansion: int = 4
 
     def __init__(
         self,
@@ -163,8 +163,8 @@ class SKBlock2(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = SKConv(planes, G = 1)
         self.bn2 = norm_layer(planes)
-        self.conv3 = conv1x1(planes, planes)
-        self.bn3 = norm_layer(planes)
+        self.conv3 = conv1x1(planes, planes * self.expansion)
+        self.bn3 = norm_layer(planes * self.expansion)
         self.downsample = downsample
         self.stride = stride
 
@@ -234,7 +234,7 @@ class SKBlock1x1(nn.Module):
     
 class ResNet(nn.Module):
     
-    def __init__(self,num_classes, layers, block = BasicBlock): 
+    def __init__(self,num_classes, layers, block = BasicBlock2): 
         
         super(ResNet, self).__init__()
         
@@ -254,7 +254,7 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(256, layers[2], stride=2)
         self.layer4 = self._make_layer(512, layers[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512, num_classes)
+        self.fc = nn.Linear(512 * self.block.expansion, num_classes)
         
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -271,14 +271,14 @@ class ResNet(nn.Module):
         downsample = None
         previous_dilation = self.dilation
         
-        if stride != 1:
+        if stride != 1 or self.inplanes != planes * self.block.expansion:
             downsample = nn.Sequential(
-                conv1x1(self.inplanes, planes, stride), 
-                norm_layer(planes))
+                conv1x1(self.inplanes, planes * self.block.expansion, stride), 
+                norm_layer(planes * self.block.expansion))
 
         layers = []
         layers.append(self.block(self.inplanes, planes, stride, downsample, norm_layer))
-        self.inplanes = planes
+        self.inplanes = planes * self.block.expansion
         for _ in range(1, blocks):
             layers.append(self.block(self.inplanes, planes, norm_layer=norm_layer))
 
@@ -307,7 +307,7 @@ def resnet18(num_classes, skconv = False, use1x1 = False):
         if use1x1:
             return ResNet(num_classes, [2, 2, 2, 2], SKBlock1x1)
             
-        return ResNet(num_classes, [2, 2, 2, 2], SKBlock)
+        return ResNet(num_classes, [2, 2, 2, 2], SKBlock2)
     
     return ResNet(num_classes, [2, 2, 2, 2])
 
@@ -316,14 +316,14 @@ def resnet34(num_classes, skconv = False, use1x1 = False):
     if skconv:
         if use1x1:
             return ResNet(num_classes, [3, 4, 6, 3], SKBlock1x1)
-        return ResNet(num_classes, [3, 4, 6, 3], SKBlock)
+        return ResNet(num_classes, [3, 4, 6, 3], SKBlock2)
     
     return ResNet(num_classes, [3, 4, 6, 3])
     
     
     
 if __name__ == '__main__':
-    net = resnet18(1000).cuda()
+    net = resnet18(200, True).cuda()
     # print(summary(net, (3, 64, 64)))
     print(summary(net, (3, 56, 56)))
     torch.cuda.empty_cache()
