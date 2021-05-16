@@ -41,7 +41,7 @@ def train(net, device, train_loader, val_loader, cyclic = False, epochs = 30, lr
     else :
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min',
                                                                patience = 2, 
-                                                               factor = 0.75, 
+                                                               factor = 0.5, 
                                                                verbose = True)
     
     train_loss_arr = []

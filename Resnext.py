@@ -213,10 +213,19 @@ def resnext29(num_classes, skconv = False, use1x1 = False, groups = 1, width_per
     
     return ResNeXt(num_classes, [2, 2, 2, 2], block = Bottleneck, groups = groups, width_per_group = width_per_group)
 
+def resnext50(num_classes, skconv = False, use1x1 = False, groups = 1, width_per_group = 64):
+    
+    if skconv:            
+        return ResNeXt(num_classes, [3, 4, 6, 3], block = SKBlock, groups = groups, width_per_group = width_per_group)
+    
+    return ResNeXt(num_classes, [3, 4, 6, 3], block = Bottleneck, groups = groups, width_per_group = width_per_group)
+
+
+# ResNeXt 32 x 4d => groups = 32, width_per_group = 4
 
 if __name__ == '__main__':
     # net = ResNeXt(200, [2,2,2,2]).cuda()
-    net = resnext29(200, True, groups = 32, width_per_group=4).cuda()
+    net = resnext50(200, True, groups = 32, width_per_group=4).cuda() # 32 x 4d 
     # net = resnext18(200).cuda()
     # print(summary(net, (3, 64, 64)))
     print(summary(net, (3, 56, 56)))

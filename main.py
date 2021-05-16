@@ -1,7 +1,7 @@
 import torch
 from SKNET import SKNet
 from Resnet import resnet18, resnet34
-from Resnext import resnext29
+from Resnext import resnext29, resnext50
 import utils
 from train_test import train
 import argparse
@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-G", default = 1, type=int, help="number of conv groups in model")
 parser.add_argument("-batchsize", default = 256, type=int, help="batch size")
 parser.add_argument("-epochs", default = 30, type=int, help="epochs")
-parser.add_argument("-model", default = 2, type=int, help="1 -> SKNET, 2-> ResNet18, 3-> ResNet34, 4-> ResNeXt18")
+parser.add_argument("-model", default = 2, type=int, help="1 -> SKNET, 2-> ResNet18, 3-> ResNet34, 4-> ResNeXt29, 5-> ResNeXt50")
 parser.add_argument("-skconv", action="store_true")
 parser.add_argument("-use1x1", action="store_true")
 parser.add_argument("-cyclic", action="store_true")
@@ -57,8 +57,11 @@ elif int(args.model) == 3:
     print("ResNet34, skconv = %s, use1x1 = %s"%(args.skconv, args.use1x1))
     net = resnet34(200, args.skconv, args.use1x1)
 elif int(args.model) == 4:
-    print("ResNeXt18, skconv = %s, use1x1 = %s"%(args.skconv, args.use1x1))
+    print("ResNeXt29, skconv = %s, use1x1 = %s"%(args.skconv, args.use1x1))
     net = resnext29(200, args.skconv, args.use1x1, groups = 32, width_per_group=4)
+elif int(args.model) == 5:
+    print("ResNeXt50, skconv = %s, use1x1 = %s"%(args.skconv, args.use1x1))
+    net = resnext50(200, args.skconv, args.use1x1, groups = 32, width_per_group=4)
 else:
     print("Wrong model input, check help")
     parser.print_help()
