@@ -261,9 +261,66 @@ class SKUnit(nn.Module):
         out = self.conv3(out)
         
         return self.relu(out + self.shortcut(residual))
+    
+class BasicBlock(nn.Module):
+    def __init__(self, in_features, mid_features, out_features, M=2, G=32, r=16, stride=1, L=32, use_1x1=False):
+        """ Constructor
+        Args:
+            in_features: input channel dimensionality.
+            out_features: output channel dimensionality.
+            M: the number of branchs.
+            G: num of convolution groups.
+            r: the radio for compute d, the length of z.
+            mid_features: the channle dim of the middle conv with stride not 1, default out_features/2.
+            stride: stride.
+            L: the minimum dim of the vector z in paper.
+        """
+        super(BasicBlock, self).__init__()
+        
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_features, mid_features, 1, stride=stride, bias=False),
+            nn.BatchNorm2d(mid_features),
+            nn.ReLU(inplace=True)
+            )
+        # self.conv2_sk =  SKConv1x1(mid_features, M=M, G=G, r=r, stride=stride, L=L)
+        # if use_1x1 :
+        #     self.conv2_sk = SKConv1x1(mid_features, M=M, G=G, r=r, stride=stride, L=L)
+            
+    
+        # self.conv2_sk = SKConv2(mid_features, M=M, G=G, r=r, stride=stride, L=L, use_1x1 = use_1x1)
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(mid_features, mid_features, 1, stride=1, bias=False),
+            nn.BatchNorm2d(mid_features),
+            nn.ReLU(inplace=True)
+            )
+        
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(mid_features, out_features, 1, stride=1, bias=False),
+            nn.BatchNorm2d(out_features)
+            )
+        
+
+        if in_features == out_features: # when dim not change, in could be added diectly to out
+            self.shortcut = nn.Sequential()
+        else: # when dim not change, in should also change dim to be added to out
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_features, out_features, 1, stride=stride, bias=False),
+                nn.BatchNorm2d(out_features)
+            )
+        
+        self.relu = nn.ReLU(inplace=True)
+    
+    def forward(self, x):
+        residual = x
+        
+        out = self.conv1(x)
+        out = self.conv2(out)
+        out = self.conv3(out)
+        
+        return self.relu(out + self.shortcut(residual))
 
 class SKNet(nn.Module):
-    def __init__(self, class_num, nums_block_list = [3, 4, 6,3], strides_list = [1, 2, 2, 2], G = 32, use_1x1 = False, M = 2):
+    def __init__(self, class_num, nums_block_list = [3, 4, 6,3], strides_list = [1, 2, 2, 2], G = 32, use_1x1 = False, M = 2, block = BasicBlock):
         '''
         Parameters
         ----------
@@ -273,6 +330,7 @@ class SKNet(nn.Module):
 
         '''
         super(SKNet, self).__init__()
+        self.block = block
         self.use_1x1 = use_1x1
         self.M = M
         self.basic_conv = nn.Sequential(
@@ -300,9 +358,9 @@ class SKNet(nn.Module):
 
         
     def _make_layer(self, in_feats, mid_feats, out_feats, nums_block, stride=1, G = 32):
-        layers=[SKUnit(in_feats, mid_feats, out_feats, stride=stride, M = self.M, G = G, use_1x1 = self.use_1x1)]
+        layers=[self.block(in_feats, mid_feats, out_feats, stride=stride, M = self.M, G = G, use_1x1 = self.use_1x1)]
         for _ in range(1,nums_block):
-            layers.append(SKUnit(out_feats, 
+            layers.append(self.block(out_feats, 
                                  mid_feats, 
                                  out_feats, 
                                  M = self.M, 
@@ -323,10 +381,17 @@ class SKNet(nn.Module):
         fea = self.classifier(fea)
         return fea
     
+def sknet29(num_classes, skconv = False):
+    if skconv:
+        return SKNet(200, [2,2,2,2], [1,2,2,2], G = 1, M = 2, block = SKUnit)
+    
+    return SKNet(200, [2,2,2,2], [1,2,2,2], G = 1, M = 2)
+
     
 if __name__ == '__main__':
-    net = SKNet(200, [2,2,2,2], [1,2,2,2], G = 1, M = 3).cuda()
+    # net = SKNet(200, [2,2,2,2], [1,2,2,2], G = 1, M = 3).cuda()
     # print(summary(net, (3, 64, 64)))
+    net = sknet29(200, True).cuda()
     print(summary(net, (3, 56, 56)))
     torch.cuda.empty_cache()
     # c = SKConv(128)

@@ -1,5 +1,5 @@
 import torch
-from SKNET import SKNet
+from SKNET import sknet29
 from Resnet import resnet18, resnet34
 from Resnext import resnext29, resnext50
 import utils
@@ -9,7 +9,7 @@ from datetime import datetime
 
 '''
 cmd :
-nohup python -u SKNET-PyTorch/main.py -epochs 50 -model 2 -skconv -cyclic &
+nohup python -u SKNET-PyTorch/main.py -epochs 50 -model 5 -skconv -lr 0.0005 -batchsize 150 &
 
 scp :
 scp -P 21490 root@ssh5.vast.ai:SKNET.pt .\Desktop\
@@ -22,7 +22,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-G", default = 1, type=int, help="number of conv groups in model")
 parser.add_argument("-batchsize", default = 256, type=int, help="batch size")
 parser.add_argument("-epochs", default = 30, type=int, help="epochs")
-parser.add_argument("-model", default = 2, type=int, help="1 -> SKNET, 2-> ResNet18, 3-> ResNet34, 4-> ResNeXt29, 5-> ResNeXt50")
+parser.add_argument("-model", default = 1, type=int, help="1 -> SKNET, 2-> ResNet18, 3-> ResNet34, 4-> ResNeXt29, 5-> ResNeXt50")
 parser.add_argument("-skconv", action="store_true")
 parser.add_argument("-use1x1", action="store_true")
 parser.add_argument("-cyclic", action="store_true")
@@ -49,7 +49,8 @@ print(device)
 num_classes = 200
 if int(args.model) == 1:
     print("SKNET, use1x1 = %s"%(args.use1x1))
-    net = SKNet(200, [2,2,2,2], [1,2,2,2], G = args.G , use_1x1 = args.use1x1, M = args.M)
+    net = sknet29(200, True)
+    # net = SKNet(200, [2,2,2,2], [1,2,2,2], G = args.G , use_1x1 = args.use1x1, M = args.M)
 elif int(args.model) == 2:
     print("ResNet18, skconv = %s, use1x1 = %s"%(args.skconv, args.use1x1))
     net = resnet18(200, args.skconv, args.use1x1)
