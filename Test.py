@@ -1,5 +1,7 @@
 import torch
 from SKNET import sknet29
+from Resnet import resnet18, resnet34
+from Resnext import resnext29, resnext50
 import utils
 import argparse
 from datetime import datetime 
@@ -71,6 +73,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-path", default = "D:\\Mtech\\Sem 4\\Results\\SKNet-29\\SKNET.pt", type=str, help="")
     parser.add_argument("-batchsize", default = 10, type=int, help="batch size")
+    parser.add_argument("-model", default = 1, type=int, help="1 -> SKNET, 2-> ResNet18, 3-> ResNet34, 4-> ResNeXt29, 5-> ResNeXt50")
+    parser.add_argument("-skconv", action="store_true")
+
     args = parser.parse_args()
     
     topN_accuracy = []
@@ -83,8 +88,31 @@ if __name__ == '__main__':
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     torch.cuda.empty_cache()
     
-    model = sknet29(200, True)
-    model.load_state_dict(torch.load(args.path))
-    model.to(device)
+    num_classes = 200
+    if int(args.model) == 1:
+        print("SKNET")
+        net = sknet29(200, True)
+        # net = SKNet(200, [2,2,2,2], [1,2,2,2], G = args.G , use_1x1 = args.use1x1, M = args.M)
+    elif int(args.model) == 2:
+        print("ResNet18, skconv = %s"%(args.skconv))
+        net = resnet18(200, args.skconv)
+    elif int(args.model) == 3:
+        print("ResNet34, skconv = %s"%(args.skconv))
+        net = resnet34(200, args.skconv)
+    elif int(args.model) == 4:
+        print("ResNeXt29, skconv = %s"%(args.skconv))
+        net = resnext29(200, args.skconv, groups = 32, width_per_group=4)
+    elif int(args.model) == 5:
+        print("ResNeXt50, skconv = %s"%(args.skconv))
+        net = resnext50(200, args.skconv, groups = 32, width_per_group=4)
+    else:
+        print("Wrong model input, check help")
+        parser.print_help()
+
     
-    topK_acc(model, device, val_loader)
+    # model = sknet29(200, True)
+    net.load_state_dict(torch.load(args.path))
+    net.to(device)
+    
+    topK_acc(net, device, val_loader)
+    torch.cuda.empty_cache()
