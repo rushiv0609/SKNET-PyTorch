@@ -47,7 +47,7 @@ def val(net, device, test_loader, k):
     
     return topN_acc
 
-def topK_acc(net, device, val_loader):
+def topK_acc(net, device, val_loader, name = "topk"):
     net.eval()
     topN_accuracy = []
 
@@ -61,11 +61,15 @@ def topK_acc(net, device, val_loader):
     plt.ylabel('Accuracy')
     plt.title('top-k accuracy')
     plt.plot(topN_accuracy)
-    plt.savefig("topk.png", format='png', dpi = 600)
+    plt.savefig( name + ".png", format='png', dpi = 600)
     # plt.show()
 
 
 if __name__ == '__main__':
+    
+    '''
+    python -u Test.py -path "D:\\Mtech\\Sem 4\\Results\\ResNet-50-32x4d_SKConv\\SKNET.pt" -model 5 -skconv
+    '''
 
     '''
     Define parser to get groups as cmd input
@@ -87,11 +91,13 @@ if __name__ == '__main__':
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     torch.cuda.empty_cache()
+    name = "topk"
     
     num_classes = 200
     if int(args.model) == 1:
         print("SKNET")
         net = sknet29(200, True)
+        name = "SKNET"
         # net = SKNet(200, [2,2,2,2], [1,2,2,2], G = args.G , use_1x1 = args.use1x1, M = args.M)
     elif int(args.model) == 2:
         print("ResNet18, skconv = %s"%(args.skconv))
@@ -102,17 +108,21 @@ if __name__ == '__main__':
     elif int(args.model) == 4:
         print("ResNeXt29, skconv = %s"%(args.skconv))
         net = resnext29(200, args.skconv, groups = 32, width_per_group=4)
+        name = "RESNEXT29"
     elif int(args.model) == 5:
         print("ResNeXt50, skconv = %s"%(args.skconv))
         net = resnext50(200, args.skconv, groups = 32, width_per_group=4)
+        name = "RESNEXT50"
     else:
         print("Wrong model input, check help")
         parser.print_help()
 
     
+    if args.skconv :
+        name += "_SKCONV"
     # model = sknet29(200, True)
     net.load_state_dict(torch.load(args.path))
     net.to(device)
     
-    topK_acc(net, device, val_loader)
+    topK_acc(net, device, val_loader, name)
     torch.cuda.empty_cache()
