@@ -37,8 +37,8 @@ def get_dataloaders(batch_size = 256):
     train_dir = 'tiny-imagenet-200/train'
     test_dir = 'tiny-imagenet-200/val'
     train_ds = torchvision.datasets.ImageFolder(train_dir, transform = transform)
-    val_ds = torchvision.datasets.ImageFolder(test_dir, transform = transform)
-    # train_ds, val_ds, _ = torch.utils.data.random_split(train_ds, [10, 10, len(train_ds)-20])
+    # val_ds = torchvision.datasets.ImageFolder(test_dir, transform = transform)
+    train_ds, val_ds, _ = torch.utils.data.random_split(train_ds, [30, 30, len(train_ds)-60])
     
     
     print("Length of train, valid set: ",(len(train_ds), len(val_ds)))
